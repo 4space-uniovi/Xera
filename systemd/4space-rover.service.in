@@ -1,0 +1,32 @@
+[Unit]
+Description=4SPACE Mini Rover (backend web + control)
+Documentation=file://@REPO@/docs/architecture.md
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+# Usuario normal, NUNCA root. Grupos dialout (ESP32), video (webcam) y gpiod (LEDs).
+User=@USER@
+Group=@USER@
+SupplementaryGroups=dialout video gpiod
+WorkingDirectory=@REPO@
+ExecStart=@REPO@/.venv/bin/python -m backend.main --host 0.0.0.0 --port 8000
+Environment=PYTHONUNBUFFERED=1
+
+# Recuperación ante fallos: se reinicia siempre, sin límite de reintentos.
+Restart=always
+RestartSec=2
+
+# Endurecimiento (el servicio solo necesita escribir su config)
+NoNewPrivileges=yes
+ProtectSystem=strict
+ReadWritePaths=@REPO@/config
+ProtectHome=read-only
+PrivateTmp=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+
+[Install]
+WantedBy=multi-user.target

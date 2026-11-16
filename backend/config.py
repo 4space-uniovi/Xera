@@ -56,6 +56,10 @@ class WifiSection(_Section):
     switch_timeout_s: int = Field(30, ge=5, le=300)
 
 
+class LedsSection(_Section):
+    enabled: bool = True  # LEDs del UNO Q: verde = ESP32 listo, rojo parpadeando = fallo
+
+
 class Settings(_Section):
     demo: bool = False
     rover: RoverSection = RoverSection()
@@ -63,6 +67,7 @@ class Settings(_Section):
     motion: MotionSection = MotionSection()
     camera: CameraSection = CameraSection()
     wifi: WifiSection = WifiSection()
+    leds: LedsSection = LedsSection()
 
 
 def resolve_config_path(path: str | os.PathLike | None = None) -> Path:

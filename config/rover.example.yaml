@@ -28,3 +28,6 @@ wifi:
   ap_ip: 192.168.4.1
   client_profile: 4space-client
   switch_timeout_s: 30
+
+leds:
+  enabled: true          # LEDs del UNO Q: verde fijo = ESP32 listo, rojo parpadeando = fallo del ESP32

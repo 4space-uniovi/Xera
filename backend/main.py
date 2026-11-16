@@ -18,6 +18,7 @@ from fastapi.staticfiles import StaticFiles
 from .api import camera, control, network
 from .config import REPO_ROOT, Settings, load_settings, resolve_config_path
 from .controllers.camera_controller import CameraController
+from .controllers.led_controller import LedController
 from .controllers.serial_controller import PySerialTransport, SerialController, SimulatedTransport, get_protocol
 from .controllers.wifi_controller import WifiController
 from .motion import MotionManager
@@ -58,6 +59,7 @@ def create_app(settings: Settings | None = None, config_path: str | Path | None 
         watchdog_s=settings.motion.watchdog_ms / 1000,
         control_timeout_s=settings.motion.control_timeout_s,
     )
+    leds = LedController(enabled=settings.leds.enabled and not settings.demo)  # en demo/tests no se tocan los LEDs reales
     hub = control.Hub(motion)
     motion.on_change = hub.schedule_broadcast
 
@@ -75,12 +77,27 @@ def create_app(settings: Settings | None = None, config_path: str | Path | None 
                 await asyncio.to_thread(serial.poll_rx)
                 await asyncio.sleep(1.0)
 
+        async def led_loop():
+            """Verde fijo = listo (ESP32 conectado; la webcam es opcional).
+            Rojo parpadeando = el ESP32 falla o no está."""
+            tick = 0
+            while True:
+                if serial.connected:
+                    leds.set_color("green")
+                else:
+                    leds.set_color("red" if tick % 2 == 0 else "off")
+                tick += 1
+                await asyncio.sleep(0.5)
+
         task = asyncio.create_task(watchdog_loop())
         sup = asyncio.create_task(serial_supervisor())
+        led_task = asyncio.create_task(led_loop())
         yield
         task.cancel()
         sup.cancel()
+        led_task.cancel()
         await app.state.camera.shutdown()
+        leds.restore()
         motion.emergency_stop()
         serial.close()
 
@@ -90,6 +107,7 @@ def create_app(settings: Settings | None = None, config_path: str | Path | None 
     app.state.serial = serial
     app.state.motion = motion
     app.state.hub = hub
+    app.state.leds = leds
     app.state.camera = CameraController(demo=settings.demo, get_cfg=lambda: app.state.settings.camera)
     app.state.wifi = WifiController(demo=settings.demo)
     app.state.started = time.monotonic()

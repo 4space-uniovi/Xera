@@ -5,6 +5,7 @@ import yaml
 from fastapi.testclient import TestClient
 
 from backend.config import Settings, load_settings
+from backend.controllers.camera_controller import CameraController
 from backend.main import create_app
 
 
@@ -16,6 +17,7 @@ def cfg_path(tmp_path):
 @pytest.fixture
 def client(cfg_path):
     app = create_app(Settings(demo=True), cfg_path)
+    app.state.camera = CameraController(detect=lambda: [])  # hermético: sin webcam, aunque el equipo tenga una
     with TestClient(app) as c:
         c.app_state = app.state
         yield c

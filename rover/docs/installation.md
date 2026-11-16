@@ -1,17 +1,26 @@
 # Instalación en el Arduino UNO Q
 
 ```bash
-git clone <url-del-repo> ~/4space-mini-rover && cd ~/4space-mini-rover
-./scripts/install.sh                 # pregunta antes de cada cambio del sistema
-./scripts/install.sh --yes --rover-id 03   # no interactivo; nombre 4SPACE-ROVER-03
+git clone https://github.com/4space-uniovi/xera.git && cd xera
+./install.sh                         # pregunta antes de cada cambio del sistema
+./install.sh --dry-run               # solo muestra lo que haría
+./install.sh --yes --rover-id 03     # no interactivo; nombre 4SPACE-ROVER-03
+./install.sh --with-firmware-tools   # además instala PlatformIO para cargar el firmware
+./doctor.sh                          # diagnóstico (solo lectura)
 ```
 
-El instalador (idempotente: se puede repetir):
-1. Comprueba ARM64 y las dependencias (`python3-venv`, `v4l-utils`); ofrece instalarlas con `apt`.
-2. Crea `.venv` e instala `requirements.txt`.
+El instalador (idempotente: se puede repetir) hace, pidiendo confirmación en cada cambio del sistema:
+1. Comprueba ARM64 y las dependencias (`python3-venv`, `v4l-utils`, `git`); ofrece instalarlas con `apt`.
+2. Crea `rover/.venv` e instala `requirements.txt`.
 3. Comprueba que tu usuario está en los grupos `dialout` (ESP32), `video` (webcam) y `gpiod` (LEDs).
-4. Guarda el identificador del rover en `config/rover.yaml`.
-5. Instala y activa `4space-rover.service` (usuario normal, no root; se reinicia solo si falla).
+4. Instala la regla udev `/etc/udev/rules.d/99-4space-xera.rules`: crea `/dev/xera-esp32` (enlace estable al
+   ESP32) y le dice a ModemManager que no lo sondee.
+5. Guarda el identificador del rover en `rover/config/rover.yaml`.
+6. Instala y activa `4space-rover.service` (usuario normal, no root; se reinicia solo si falla).
+7. Opcional (`--with-firmware-tools`): PlatformIO en `~/.platformio-venv`, para cargar el firmware.
+
+Para cargar el firmware desde la propia placa: `rover/scripts/flash_firmware.sh` (para el servicio mientras
+carga y lo reanuda). El script `doctor.sh` comprueba todo lo anterior y dice cómo arreglar lo que falle.
 
 **No toca la red ni NetworkManager.** El modo AP llega en la Fase 4.
 

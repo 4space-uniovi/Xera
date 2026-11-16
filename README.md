@@ -26,6 +26,7 @@ XERA can be built from scratch (DIY), from a kit, or used pre-assembled.
 |---|---|
 | [`firmware/`](firmware) | ESP32-S3 firmware (PlatformIO). Drives the 4 motors and the LEDs from a simple serial protocol. |
 | [`examples/python/`](examples/python) | Sample code to drive the rover from Python. |
+| [`rover/`](rover) | Web control app (live video + virtual joystick) for the onboard Linux computer (Arduino UNO Q / Raspberry Pi), with install scripts, systemd service and tests. |
 | [`img/`](img) | Logos, photos and the board schematic used in this README. |
 
 ## Electronics
@@ -80,6 +81,20 @@ pio device monitor
 pip install pyserial
 python examples/python/drive.py COM5   # or /dev/ttyACM0 on Linux / Raspberry Pi
 ```
+
+### 3. Drive it from a phone or tablet (onboard Linux computer)
+
+On the Arduino UNO Q (Debian ARM64) or a Raspberry Pi connected to the ESP32-S3 over USB:
+
+```bash
+git clone https://github.com/4space-uniovi/xera.git && cd xera
+./install.sh        # Python venv, systemd service (starts on boot), udev rule, permissions
+./doctor.sh         # checks everything and tells you what is missing
+```
+
+Then open `http://<rover-ip>:8000`: live webcam, virtual joystick, speed limit and system status.
+Details in [`rover/README.md`](rover/README.md). To flash the firmware from the same computer:
+`./install.sh --with-firmware-tools` and then `rover/scripts/flash_firmware.sh`.
 
 ## Reversing the motor direction
 

@@ -18,10 +18,20 @@ Python + FastAPI en un `venv`, HTML/CSS/JS planos y servicios `systemd`.
 | 5 | Servicios systemd y arranque automático | ✅ backend (el servicio del AP llega con la Fase 4) |
 | 6 | Documentación de taller y pruebas finales | pendiente |
 
+## Instalación completa en el rover (un solo comando)
+
+```bash
+git clone https://github.com/4space-uniovi/xera.git && cd xera
+./install.sh       # dependencias, venv, permisos, regla udev, servicio systemd
+./doctor.sh        # diagnóstico: qué funciona y qué falta
+```
+
+Detalles y opciones (`--yes`, `--dry-run`, `--rover-id`, `--with-firmware-tools`) en [docs/installation.md](docs/installation.md).
+
 ## Probarlo ya (modo demo, en cualquier ordenador o en el UNO Q)
 
 ```bash
-git clone <url-del-repo> 4space-mini-rover && cd 4space-mini-rover
+git clone https://github.com/4space-uniovi/xera.git && cd xera/rover
 python3 -m venv .venv
 .venv/bin/pip install -r requirements-dev.txt
 ./scripts/dev.sh            # arranca en http://<ip>:8000 (modo demo)

@@ -107,3 +107,18 @@ input[type=range] { width: 100%; accent-color: var(--brand); height: 32px; }
 .form input:disabled { opacity: .5; }
 .form input:focus, .form select:focus { outline: 2px solid var(--brand); border-color: var(--brand); }
 .row2 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+
+/* móvil en horizontal (poca altura): vídeo y joystick caben sin hacer scroll */
+@media (orientation: landscape) and (max-height: 520px) {
+  :root { --pad-size: min(46vh, 34vw); }
+  .topbar { padding: 6px 14px; }
+  .tab { padding: 6px; }
+  main { padding: 8px 14px; }
+  .control-grid { gap: 10px; grid-template-columns: 1.2fr 1fr; }
+  .video-box { width: min(100%, calc((100dvh - 120px) * 4 / 3)); margin: 0 auto; }
+  .card { padding: 10px; }
+  .pad-card { display: grid; grid-template-columns: auto 1fr; gap: 8px 14px; align-items: center; justify-items: stretch; }
+  .pad-card .pad { grid-row: 1 / span 4; }
+  .readout { justify-content: center; }
+  .btn { min-height: 44px; padding: 8px; }
+}

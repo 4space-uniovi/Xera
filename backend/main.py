@@ -27,6 +27,15 @@ FRONTEND_DIR = REPO_ROOT / "frontend"
 WATCHDOG_PERIOD_S = 0.05
 
 
+class NoCacheStatic(StaticFiles):
+    """Los estudiantes editan HTML/JS/CSS: que el navegador siempre revalide."""
+
+    async def get_response(self, path, scope):
+        resp = await super().get_response(path, scope)
+        resp.headers["Cache-Control"] = "no-cache"
+        return resp
+
+
 def create_app(settings: Settings | None = None, config_path: str | Path | None = None) -> FastAPI:
     path = resolve_config_path(config_path)
     settings = settings or load_settings(path)
@@ -71,7 +80,7 @@ def create_app(settings: Settings | None = None, config_path: str | Path | None 
     app.include_router(control.router)
     app.include_router(camera.router)
     app.include_router(network.router)
-    app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
+    app.mount("/", NoCacheStatic(directory=FRONTEND_DIR, html=True), name="frontend")
     return app
 
 

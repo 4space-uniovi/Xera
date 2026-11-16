@@ -65,7 +65,7 @@ class UartProtocol(ABC):
 
 
 class CsvProtocol(UartProtocol):
-    """PROVISIONAL: "X,Y\\n", por ejemplo b"50,-25\\n"."""
+    """Protocolo del firmware actual: "X,Y\\n", por ejemplo b"50,-25\\n"."""
 
     name = "csv"
 

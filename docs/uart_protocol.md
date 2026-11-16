@@ -1,7 +1,7 @@
-# Protocolo UART (PROVISIONAL)
+# Protocolo UART
 
-> ⚠️ El protocolo definitivo del firmware del ESP32-S3 aún no está fijado.
-> El formato de abajo es un **ejemplo** para poder probar el sistema.
+> Confirmado para el firmware actual del ESP32-S3 (noviembre 2026): una línea `X,Y\n`.
+> Si el firmware cambia, solo hay que tocar `serial_controller.py` (ver "Cómo cambiar el formato").
 
 ## Protocolo `csv` (el actual)
 

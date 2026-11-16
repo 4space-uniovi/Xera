@@ -1,8 +1,7 @@
 # Primera prueba con hardware (ESP32-S3 + webcam)
 
 > ⚠️ **Seguridad:** levanta el rover para que las **ruedas no toquen el suelo** y ten a mano
-> el interruptor/cable de los motores. El protocolo UART (`X,Y\n`) es PROVISIONAL: si el
-> firmware espera otro formato, los motores no harán caso (o harán algo inesperado).
+> el interruptor/cable de los motores. El protocolo UART es `X,Y\n` (confirmado con el firmware actual).
 > Esta prueba arranca con la velocidad máxima al **20 %** (`config/rover.yaml`).
 
 ## 1. Conectar
@@ -38,7 +37,7 @@ verás el puerto serie, las tramas enviadas y la webcam. Para parar el servidor:
 | Síntoma | Qué mirar |
 |---------|-----------|
 | ESP32 "Desconectado" | `ls /dev/ttyACM*`; `groups` debe incluir `dialout`; `tail /tmp/rover.log` |
-| Se conecta pero no se mueve | Protocolo distinto: ver `docs/uart_protocol.md` |
+| Se conecta pero no se mueve | Comprueba baudrate (115200 por defecto) y que el firmware tenga su watchdog; ver `docs/uart_protocol.md` |
 | El ESP32 se reinicia al abrir el puerto | Ya se abre con DTR/RTS a 0; si persiste, revisa el firmware |
 | Webcam "desconectada" | `./scripts/test_camera.sh`; ¿hub con alimentación suficiente? |
 | "La cámara no entrega MJPEG" | La cámara solo da YUYV: prueba otra resolución o avísame (hace falta `ffmpeg`) |

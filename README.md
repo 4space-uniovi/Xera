@@ -71,9 +71,13 @@ PWM runs at 1 kHz with 8-bit resolution on the 8 `HA`/`HB` pins.
 Install [PlatformIO](https://platformio.org/) (Core 6.2 or newer) and, from `firmware/`:
 
 ```bash
-pio run -t upload
+pio run -t upload                 # env "xera": Serial on the native USB port
+pio run -e xera-uart -t upload    # env "xera-uart": Serial on the UART port (CH343 chip)
 pio device monitor
 ```
+
+Use the environment that matches the USB-C connector you plug into the computer. If you flash the wrong one,
+the rover compiles and uploads fine but stops answering, because `Serial` lives on the other connector.
 
 ### 2. Drive it from Python
 
@@ -150,6 +154,11 @@ Both values are integers from `-100` to `100`.
 | `50,-30` | forward while turning left |
 | `0,100` | rotate in place (right) |
 | `0,0` | stop |
+
+**Safety watchdog:** if no valid command arrives for 400 ms (`COMMAND_TIMEOUT_MS`) the rover stops
+(`0,0`) and prints `WATCHDOG -> no command, stopped`. Hosts must resend the command continuously
+(at least 5 Hz; the Python example and the web app send 20 Hz). A command typed once in the serial
+monitor therefore only lasts 400 ms.
 
 Each accepted command is acknowledged with `RECEIVED -> Throttle: … Steering: …`. Values outside the range are ignored.
 

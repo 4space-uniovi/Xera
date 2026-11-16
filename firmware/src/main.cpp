@@ -107,6 +107,22 @@ int steering = 0;
 
 String mensaje = "";
 
+// ======================================================
+// COMMAND WATCHDOG (safety)
+// ======================================================
+//
+// If no valid command arrives for COMMAND_TIMEOUT_MS the rover stops
+// (throttle = steering = 0). Without this, the last command would be kept
+// forever when the USB cable comes off or the host program crashes.
+//
+// Hosts must therefore RESEND the command continuously (>= 5 Hz; the
+// Python example and the web app use 20 Hz). A command typed once by hand
+// in the serial monitor lasts only COMMAND_TIMEOUT_MS.
+
+#define COMMAND_TIMEOUT_MS 400
+
+unsigned long lastCommandMs = 0;
+
 
 // ======================================================
 // DEBUG
@@ -431,6 +447,7 @@ void leerSerial() {
 
           throttle = nuevoThrottle;
           steering = nuevoSteering;
+          lastCommandMs = millis();
 
           Serial.print("RECEIVED -> Throttle: ");
           Serial.print(throttle);
@@ -529,6 +546,16 @@ void loop() {
   // ====================================================
 
   leerSerial();
+
+  // Watchdog: no recent command -> stop
+  if ((throttle != 0 || steering != 0) &&
+      millis() - lastCommandMs > COMMAND_TIMEOUT_MS) {
+
+    throttle = 0;
+    steering = 0;
+
+    Serial.println("WATCHDOG -> no command, stopped");
+  }
 
 
   // ====================================================

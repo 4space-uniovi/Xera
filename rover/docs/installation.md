@@ -5,8 +5,8 @@ git clone https://github.com/4space-uniovi/xera.git && cd xera
 ./install.sh                         # pregunta antes de cada cambio del sistema
 ./install.sh --dry-run               # solo muestra lo que haría
 ./install.sh --yes --rover-id 03     # no interactivo; nombre 4SPACE-ROVER-03
-./install.sh --with-firmware-tools   # además instala PlatformIO para cargar el firmware
 ./doctor.sh                          # diagnóstico (solo lectura)
+./update.sh                          # más adelante: git pull + aplicar cambios
 ```
 
 El instalador (idempotente: se puede repetir) hace, pidiendo confirmación en cada cambio del sistema:
@@ -17,10 +17,20 @@ El instalador (idempotente: se puede repetir) hace, pidiendo confirmación en ca
    ESP32) y le dice a ModemManager que no lo sondee.
 5. Guarda el identificador del rover en `rover/config/rover.yaml`.
 6. Instala y activa `4space-rover.service` (usuario normal, no root; se reinicia solo si falla).
-7. Opcional (`--with-firmware-tools`): PlatformIO en `~/.platformio-venv`, para cargar el firmware.
 
-Para cargar el firmware desde la propia placa: `rover/scripts/flash_firmware.sh` (para el servicio mientras
-carga y lo reanuda). El script `doctor.sh` comprueba todo lo anterior y dice cómo arreglar lo que falle.
+`doctor.sh` comprueba todo lo anterior y dice cómo arreglar lo que falle.
+El firmware del ESP32 **no** se carga desde la placa: se hace desde un PC con PlatformIO (ver el README del repo).
+
+## Actualizar (`git pull`)
+```bash
+cd xera && ./update.sh              # trae los cambios y los aplica
+./update.sh --dry-run               # solo muestra qué commits llegarían
+./update.sh --reinstall             # vuelve a aplicar la instalación aunque estés al día
+```
+- Si solo cambió la interfaz web (`frontend/`) o la documentación, basta recargar la página: no reinstala ni reinicia.
+- Si cambió Python u otra cosa, ejecuta `install.sh --yes` (idempotente: dependencias, regla udev, servicio) y reinicia el servicio.
+- Tu configuración (`rover/config/rover.yaml`) no está en git, así que `git pull` nunca la pisa.
+- Si tienes cambios locales sin guardar, el script se detiene y te lo dice (haz commit o `git stash`).
 
 **No toca la red ni NetworkManager.** El modo AP llega en la Fase 4.
 

@@ -97,8 +97,8 @@ git clone https://github.com/4space-uniovi/xera.git && cd xera
 ```
 
 Then open `http://<rover-ip>:8000`: live webcam, virtual joystick, speed limit and system status.
-Details in [`rover/README.md`](rover/README.md). To flash the firmware from the same computer:
-`./install.sh --with-firmware-tools` and then `rover/scripts/flash_firmware.sh`.
+Details in [`rover/README.md`](rover/README.md). To update the rover later: `./update.sh` (git pull + apply changes).
+The firmware is flashed from a PC (see step 1); the onboard computer only runs the web app.
 
 ## Reversing the motor direction
 

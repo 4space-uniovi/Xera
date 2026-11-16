@@ -26,7 +26,7 @@ git clone https://github.com/4space-uniovi/xera.git && cd xera
 ./doctor.sh        # diagnóstico: qué funciona y qué falta
 ```
 
-Detalles y opciones (`--yes`, `--dry-run`, `--rover-id`, `--with-firmware-tools`) en [docs/installation.md](docs/installation.md).
+Detalles y opciones (`--yes`, `--dry-run`, `--rover-id`) y cómo actualizar con `./update.sh` (git pull) en [docs/installation.md](docs/installation.md).
 
 ## Probarlo ya (modo demo, en cualquier ordenador o en el UNO Q)
 

@@ -1,0 +1,30 @@
+# Copia este fichero a config/rover.yaml (ignorado por git) y edítalo,
+# o cambia los ajustes desde la pestaña "Ajustes" de la web.
+# NUNCA escribas contraseñas Wi-Fi aquí: las guarda NetworkManager.
+demo: false              # true = sin ESP32 ni webcam (desarrollo en un PC)
+
+rover:
+  name: 4SPACE-ROVER-01
+
+serial:
+  port: auto             # auto | /dev/ttyACM0 | ...   (Fase 2)
+  baudrate: 115200
+  protocol: csv          # ver docs/uart_protocol.md
+
+motion:
+  max_speed: 60          # % (20-100)
+  send_rate_hz: 20       # frecuencia de envío del joystick
+  watchdog_ms: 300       # sin órdenes durante este tiempo -> (0,0)
+  control_timeout_s: 5.0 # el dueño del control inactivo lo pierde
+
+camera:
+  device: auto           # (Fase 3)
+  width: 640
+  height: 480
+  fps: 15
+
+wifi:
+  ap_ssid: 4SPACE-ROVER-01   # (Fase 4)
+  ap_ip: 192.168.4.1
+  client_profile: 4space-client
+  switch_timeout_s: 30

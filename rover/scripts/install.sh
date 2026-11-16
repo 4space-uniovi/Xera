@@ -5,7 +5,6 @@
 #   ./install.sh --yes                 # responde "sí" a todo (no interactivo)
 #   ./install.sh --dry-run             # solo muestra lo que haría, sin cambiar nada
 #   ./install.sh --rover-id 03         # nombre del rover: 4SPACE-ROVER-03
-#   ./install.sh --with-firmware-tools # instala también PlatformIO (para cargar el firmware)
 #   ./install.sh --no-service          # no instala el servicio systemd (PC de desarrollo)
 #   ./install.sh --force               # permite arquitecturas que no son ARM64
 #
@@ -13,23 +12,19 @@
 set -euo pipefail
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"          # carpeta rover/
-ROOT="$(cd "$REPO/.." && pwd)"
-FIRMWARE_DIR="$ROOT/firmware"                     # existe si estamos dentro del repo xera
 USER_NAME="${SUDO_USER:-$(id -un)}"
 UNIT=4space-rover.service
 UDEV_RULE=/etc/udev/rules.d/99-4space-xera.rules
-PIO_VENV="$HOME/.platformio-venv"
-YES=0; DRY=0; ROVER_ID=""; FORCE=0; NO_SERVICE=0; WITH_PIO=0
+YES=0; DRY=0; ROVER_ID=""; FORCE=0; NO_SERVICE=0
 
 while [ $# -gt 0 ]; do
   case "$1" in
     --yes|-y) YES=1 ;;
     --dry-run|-n) DRY=1 ;;
     --rover-id) ROVER_ID="${2:?falta el identificador}"; shift ;;
-    --with-firmware-tools) WITH_PIO=1 ;;
     --no-service) NO_SERVICE=1 ;;
     --force) FORCE=1 ;;
-    -h|--help) sed -n '2,13p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,12p' "$0"; exit 0 ;;
     *) echo "Opción desconocida: $1 (usa --help)"; exit 2 ;;
   esac
   shift
@@ -54,14 +49,14 @@ if [ "$(id -u)" = 0 ]; then
 fi
 
 # ---------------------------------------------------------------------------
-say "1/8 Arquitectura"
+say "1/7 Arquitectura"
 ARCH="$(uname -m)"
 if [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then ok "ARM64 ($ARCH)"
 elif [ "$FORCE" = 1 ]; then warn "Arquitectura $ARCH (continúo por --force)"
 else echo "Este instalador es para ARM64 (UNO Q / Raspberry Pi); aquí hay $ARCH. Usa --force para instalar igualmente."; exit 1; fi
 
 # ---------------------------------------------------------------------------
-say "2/8 Dependencias del sistema"
+say "2/7 Dependencias del sistema"
 missing=()
 command -v python3 >/dev/null || missing+=(python3)
 python3 -c "import ensurepip" 2>/dev/null || missing+=(python3-venv python3-pip)
@@ -77,7 +72,7 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-say "3/8 Entorno virtual Python (.venv)"
+say "3/7 Entorno virtual Python (.venv)"
 cd "$REPO"
 if [ -x .venv/bin/python ]; then ok ".venv ya existe"
 else do_cmd python3 -m venv .venv && ok "creado .venv"; fi
@@ -85,7 +80,7 @@ if [ "$DRY" = 1 ]; then echo "  [dry-run] .venv/bin/python -m pip install -r req
 else .venv/bin/python -m pip install -q -r requirements.txt && ok "dependencias Python instaladas en .venv"; fi
 
 # ---------------------------------------------------------------------------
-say "4/8 Permisos de dispositivos (grupos)"
+say "4/7 Permisos de dispositivos (grupos)"
 for g in dialout video gpiod; do
   getent group "$g" >/dev/null || { warn "el grupo $g no existe (se omite)"; continue; }
   if id -nG "$USER_NAME" | tr ' ' '\n' | grep -qx "$g"; then ok "$USER_NAME ya está en el grupo $g"
@@ -94,7 +89,7 @@ for g in dialout video gpiod; do
 done
 
 # ---------------------------------------------------------------------------
-say "5/8 Regla udev del ESP32 (/dev/xera-esp32 y sin ModemManager)"
+say "5/7 Regla udev del ESP32 (/dev/xera-esp32 y sin ModemManager)"
 if ! command -v udevadm >/dev/null; then warn "sin udev: se omite"
 else
   RULE_TMP="$(mktemp)"; trap 'rm -f "$RULE_TMP"' EXIT
@@ -115,7 +110,7 @@ RULE
 fi
 
 # ---------------------------------------------------------------------------
-say "6/8 Identificador y configuración del rover"
+say "6/7 Identificador y configuración del rover"
 if [ -z "$ROVER_ID" ] && [ "$YES" = 0 ] && [ "$DRY" = 0 ]; then
   read -r -p "  Número/identificador del rover (Enter = no cambiar): " ROVER_ID || true
 fi
@@ -136,7 +131,7 @@ PY
 else ok "sin cambios de nombre"; fi
 
 # ---------------------------------------------------------------------------
-say "7/8 Servicio systemd ($UNIT)"
+say "7/7 Servicio systemd ($UNIT)"
 if [ "$NO_SERVICE" = 1 ]; then warn "omitido (--no-service)"
 elif ! command -v systemctl >/dev/null; then warn "sin systemd: se omite"
 else
@@ -162,18 +157,6 @@ else
   fi
 fi
 
-# ---------------------------------------------------------------------------
-say "8/8 Herramientas para cargar el firmware (PlatformIO)"
-if [ ! -d "$FIRMWARE_DIR" ]; then warn "no hay carpeta firmware/ junto a rover/: se omite"
-elif command -v pio >/dev/null || [ -x "$PIO_VENV/bin/pio" ]; then ok "PlatformIO ya instalado"
-elif [ "$WITH_PIO" = 1 ] || { [ "$YES" = 0 ] && [ "$DRY" = 0 ] && ask "¿Instalar PlatformIO (~200 MB, necesita Internet) para cargar el firmware?"; }; then
-  do_cmd python3 -m venv "$PIO_VENV"
-  do_cmd "$PIO_VENV/bin/pip" install -q -U platformio
-  do_cmd mkdir -p "$HOME/.local/bin"
-  do_cmd ln -sf "$PIO_VENV/bin/pio" "$HOME/.local/bin/pio"
-  ok "PlatformIO instalado en $PIO_VENV (comando: pio; asegúrate de tener ~/.local/bin en el PATH)"
-else warn "omitido. Para instalarlo: ./install.sh --with-firmware-tools"; fi
-
 IP="$(ip -4 route get 1.1.1.1 2>/dev/null | sed -n 's/.* src \([0-9.]*\).*/\1/p' | head -1)"
-printf '\nListo%s.\n  Web:    http://%s:8000\n  Logs:   journalctl -u %s -f\n  Estado: %s/scripts/doctor.sh\n' \
+printf '\nListo%s.\n  Web:    http://%s:8000\n  Logs:   journalctl -u %s -f\n  Estado: %s/scripts/doctor.sh\n  Actualizar más adelante: git pull && ./install.sh --yes   (o ./update.sh)\n' \
   "$([ "$DRY" = 1 ] && echo ' (simulación)')" "${IP:-<ip-del-rover>}" "$UNIT" "$REPO"

@@ -73,13 +73,10 @@ if command -v nmcli >/dev/null; then
   nmcli -t -f DEVICE,TYPE,STATE,CONNECTION device 2>/dev/null | awk -F: '$2=="wifi"{printf "  · %s: %s (%s)\n",$1,$3,$4}'
 else meh "sin nmcli"; fi
 
-head "Firmware"
-if [ -d "$ROOT/firmware" ]; then
-  ok "carpeta firmware/ presente"
-  command -v pio >/dev/null || [ -x "$HOME/.platformio-venv/bin/pio" ] && ok "PlatformIO instalado" \
-    || meh "PlatformIO no instalado (solo hace falta para cargar firmware)" "./scripts/install.sh --with-firmware-tools"
-  grep -qiE "watchdog|timeout" "$ROOT/firmware/src/main.cpp" 2>/dev/null && ok "el firmware parece tener un temporizador de seguridad" \
-    || meh "el firmware NO tiene watchdog: si se corta el USB, conserva la última orden" "ver docs/uart_protocol.md"
+head "Firmware (informativo)"
+if [ -f "$ROOT/firmware/src/main.cpp" ]; then
+  grep -qiE "watchdog|timeout" "$ROOT/firmware/src/main.cpp" && ok "el firmware del repo tiene watchdog (recuerda cargarlo desde el PC)" \
+    || meh "el firmware del repo NO tiene watchdog: si se corta el USB conserva la última orden" "ver firmware/README.md"
 else meh "no hay carpeta firmware/ junto a rover/ (instalación suelta)"; fi
 
 printf '\n'

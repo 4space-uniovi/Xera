@@ -1,6 +1,6 @@
 # Protocolo UART
 
-> Confirmado para el firmware actual del ESP32-S3 (noviembre 2026): una línea `X,Y\n`.
+> Es el protocolo del firmware XERA (`firmware/src/main.cpp`, repo `4space-uniovi/xera`).
 > Si el firmware cambia, solo hay que tocar `serial_controller.py` (ver "Cómo cambiar el formato").
 
 ## Protocolo `csv` (el actual)
@@ -8,15 +8,26 @@
 Una línea ASCII por orden, terminada en `\n`:
 
 ```
-X,Y\n
+throttle,steering\n
 ```
 
-- `X` = steering (giro), entero de -100 (izquierda) a 100 (derecha).
-- `Y` = throttle (avance), entero de -100 (marcha atrás) a 100 (adelante).
+- **throttle** (avance): entero de -100 (marcha atrás) a 100 (adelante).
+- **steering** (giro): entero de -100 (izquierda) a 100 (derecha). Con throttle = 0 el rover gira sobre sí mismo.
 
-Ejemplos: `50,-25\n`  ·  `0,0\n` (parar).
+| Frase | Trama |
+|-------|-------|
+| avanzar recto | `50,0` |
+| marcha atrás | `-50,0` |
+| avanzar girando a la derecha | `50,30` |
+| girar sobre sí mismo a la derecha | `0,100` |
+| parar | `0,0` |
 
-Parámetros del puerto: 115200 baudios, 8N1 (configurable en Ajustes / `config/rover.yaml`).
+> ⚠️ **El orden es throttle primero.** En la web y en el código del backend se usa (x, y) con
+> x = steering e y = throttle; el protocolo `csv` los intercambia al enviar. Valores fuera de
+> -100..100 son ignorados por el firmware.
+
+Parámetros del puerto: 115200 baudios, 8N1. El firmware responde `RECEIVED -> Throttle: … Steering: …`
+por cada orden aceptada (se ve en la pestaña Estado).
 
 ## Cómo cambiar el formato
 
@@ -28,19 +39,19 @@ el resto del backend no cambia:
 class MiProtocolo(UartProtocol):
     name = "mio"
 
-    def encode(self, x: int, y: int) -> bytes:
-        return f"M {x} {y}\r\n".encode("ascii")
+    def encode(self, x: int, y: int) -> bytes:       # x = steering, y = throttle
+        return f"M {y} {x}\r\n".encode("ascii")
 
     def decode(self, frame: bytes) -> tuple[int, int]:   # lo usa el simulador
-        _, x, y = frame.decode().split()
+        _, y, x = frame.decode().split()
         return int(x), int(y)
 ```
 
 Luego elige `mio` en Ajustes → Protocolo (o `serial.protocol: mio` en el YAML).
 
-## Watchdog del firmware (obligatorio)
+## Watchdog del firmware (obligatorio y AÚN NO IMPLEMENTADO)
 
-El ESP32-S3 debe parar los motores si no recibe ninguna trama válida durante un tiempo corto
-(recomendado 300–500 ms). El backend envía tramas a ~20 Hz mientras hay un cliente conduciendo,
-y `0,0` al parar. Si se desconecta el USB o el proceso Linux muere, solo el watchdog del firmware
-puede detener el rover.
+El firmware actual **conserva la última orden indefinidamente**: si se desconecta el USB o muere el
+proceso Linux mientras el rover avanza, los motores siguen. Hay que añadir en `firmware/src/main.cpp`
+un temporizador que ponga `throttle = steering = 0` si no llega ninguna trama válida durante
+~300–500 ms. El backend envía tramas a ~20 Hz mientras hay alguien conduciendo y `0,0` al parar.

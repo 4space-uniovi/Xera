@@ -22,13 +22,19 @@ def test_validate_rejects(bad):
         validate_xy(0, bad)
 
 
-def test_csv_protocol_format():
+def test_csv_protocol_is_throttle_then_steering():
+    """El firmware XERA espera "throttle,steering": primero el avance, luego el giro."""
     p = CsvProtocol()
-    assert p.encode(50, -25) == b"50,-25\n"
-    assert p.decode(b"50,-25\n") == (50, -25)
+    # x = steering, y = throttle
+    assert p.encode(0, 50) == b"50,0\n"        # avanzar recto (README del firmware: 50,0)
+    assert p.encode(30, 50) == b"50,30\n"      # avanzar girando a la derecha
+    assert p.encode(-30, 50) == b"50,-30\n"    # avanzar girando a la izquierda
+    assert p.encode(100, 0) == b"0,100\n"      # girar sobre sí mismo a la derecha
+    assert p.encode(0, 0) == b"0,0\n"
+    assert p.decode(b"50,30\n") == (30, 50)
 
 
-@pytest.mark.parametrize("frame", [b"", b"1\n", b"a,b\n", b"1,2,3\n", b"500,0\n", b"\xff\n"])
+@pytest.mark.parametrize("frame", [b"", b"1\n", b"a,b\n", b"1,2,3\n", b"500,0\n", b"0,500\n", b"\xff\n"])
 def test_csv_decode_invalid(frame):
     with pytest.raises(ValueError):
         CsvProtocol().decode(frame)
@@ -40,9 +46,9 @@ def test_unknown_protocol():
 
 
 def test_send_reaches_simulated_esp32(esp):
-    assert esp.send(50, -25) is True
-    assert esp.transport.frames[-1] == b"50,-25\n"
-    assert esp.transport.last == (50, -25)
+    assert esp.send(50, -25) is True                   # x=50 giro, y=-25 marcha atrás
+    assert esp.transport.frames[-1] == b"-25,50\n"    # throttle,steering
+    assert esp.transport.last == (50, -25)             # el simulador decodifica de vuelta a (x, y)
     assert esp.status()["last_sent"] == {"x": 50, "y": -25}
 
 

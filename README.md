@@ -30,7 +30,7 @@ python3 -m venv .venv
 > En Debian puede faltar el paquete del venv: `sudo apt install python3-venv python3-pip`.
 
 Abre `http://localhost:8000` (o la IP del UNO Q) → **Pedir control** → arrastra el joystick.
-En la pestaña **Estado** verás las tramas `X,Y` que recibiría el ESP32 (simulado).
+En la pestaña **Estado** verás las tramas `throttle,steering` que recibiría el ESP32 (simulado).
 
 Pruebas automáticas (no necesitan hardware):
 

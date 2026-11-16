@@ -1,7 +1,7 @@
 # Primera prueba con hardware (ESP32-S3 + webcam)
 
 > ⚠️ **Seguridad:** levanta el rover para que las **ruedas no toquen el suelo** y ten a mano
-> el interruptor/cable de los motores. El protocolo UART es `X,Y\n` (confirmado con el firmware actual).
+> el interruptor/cable de los motores. El protocolo UART es `throttle,steering\n` (el del firmware XERA).
 > Esta prueba arranca con la velocidad máxima al **20 %** (`config/rover.yaml`).
 
 ## 1. Conectar

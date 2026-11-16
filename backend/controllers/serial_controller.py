@@ -65,17 +65,22 @@ class UartProtocol(ABC):
 
 
 class CsvProtocol(UartProtocol):
-    """Protocolo del firmware actual: "X,Y\\n", por ejemplo b"50,-25\\n"."""
+    """Protocolo del firmware XERA: "throttle,steering\\n" (enteros de -100 a 100).
+
+    Ojo con el orden: internamente x = steering (giro) e y = throttle (avance),
+    pero en el cable va PRIMERO el throttle. Ej.: avanzar al 50 % girando un
+    poco a la derecha (x=30, y=50) -> b"50,30\\n". Ver docs/uart_protocol.md.
+    """
 
     name = "csv"
 
     def encode(self, x: int, y: int) -> bytes:
-        return f"{x},{y}\n".encode("ascii")
+        return f"{y},{x}\n".encode("ascii")  # throttle,steering
 
     def decode(self, frame: bytes) -> tuple[int, int]:
         try:
-            xs, ys = frame.decode("ascii").strip().split(",")
-            return validate_xy(int(xs), int(ys))
+            ts, ss = frame.decode("ascii").strip().split(",")  # throttle,steering
+            return validate_xy(int(ss), int(ts))                # -> (x=steering, y=throttle)
         except (UnicodeDecodeError, ValueError) as exc:
             raise ValueError(f"trama inválida {frame!r}: {exc}") from exc
 

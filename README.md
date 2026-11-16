@@ -12,8 +12,8 @@ Python + FastAPI en un `venv`, HTML/CSS/JS planos y servicios `systemd`.
 | Fase | Contenido | Estado |
 |------|-----------|--------|
 | 1 | Estructura, configuración, backend y frontend con joystick simulado | ✅ hecha |
-| 2 | Comunicación serie USB con el ESP32-S3 | pendiente |
-| 3 | Vídeo USB (MJPEG) | pendiente |
+| 2 | Comunicación serie USB con el ESP32-S3 (autodetección, reconexión) | ✅ hecha (probada con simulador, falta hardware real) |
+| 3 | Vídeo USB (MJPEG, una captura compartida) | ✅ hecha (probada con cámara simulada, falta webcam real) |
 | 4 | Wi-Fi: hotspot AP ↔ cliente | pendiente |
 | 5 | Servicios systemd y arranque automático | pendiente |
 | 6 | Documentación de taller y pruebas finales | pendiente |
@@ -37,6 +37,10 @@ Pruebas automáticas (no necesitan hardware):
 ```bash
 .venv/bin/python -m pytest
 ```
+
+## Probar con el hardware real
+
+Ver [docs/first_hardware_test.md](docs/first_hardware_test.md) (ESP32-S3 + webcam por hub USB).
 
 ## Estructura
 

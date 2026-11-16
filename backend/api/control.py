@@ -27,7 +27,7 @@ from fastapi import APIRouter, Body, HTTPException, Request, WebSocket, WebSocke
 from pydantic import ValidationError
 
 from ..config import merge_settings, save_settings
-from ..controllers.serial_controller import PROTOCOLS
+from ..controllers.serial_controller import PROTOCOLS, list_serial_ports
 
 log = logging.getLogger(__name__)
 router = APIRouter()
@@ -109,13 +109,18 @@ def status(request: Request) -> dict:
     }
 
 
+@router.get("/api/serial/ports")
+def serial_ports() -> list[dict]:
+    return list_serial_ports()
+
+
 @router.get("/api/config")
 def get_config(request: Request) -> dict:
     return request.app.state.settings.model_dump()
 
 
 @router.put("/api/config")
-def put_config(request: Request, patch: dict = Body(...)) -> dict:
+async def put_config(request: Request, patch: dict = Body(...)) -> dict:
     """Cambio parcial, p. ej. {"motion": {"max_speed": 40}}. Valida todo antes de aplicar."""
     st = request.app.state
     try:
@@ -126,10 +131,13 @@ def put_config(request: Request, patch: dict = Body(...)) -> dict:
     if new.serial.protocol not in PROTOCOLS:
         raise HTTPException(422, detail=[{"field": "serial.protocol", "msg": "protocolo desconocido"}])
 
+    cam_changed = new.camera != st.settings.camera
     st.settings = new
     st.motion.set_max_speed(new.motion.max_speed)
     st.motion.watchdog_s = new.motion.watchdog_ms / 1000
     st.motion.control_timeout_s = new.motion.control_timeout_s
-    st.serial.set_protocol(new.serial.protocol)
+    st.serial.reconfigure(new.serial.port, new.serial.baudrate, new.serial.protocol)
     save_settings(new, st.config_path)
+    if cam_changed:
+        await st.camera.restart()
     return new.model_dump()

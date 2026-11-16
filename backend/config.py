@@ -29,7 +29,8 @@ class RoverSection(_Section):
 
 
 class SerialSection(_Section):
-    port: str = "auto"
+    # Solo "auto" o un dispositivo USB-serie: el navegador no puede elegir rutas arbitrarias.
+    port: str = Field("auto", pattern=r"^(auto|/dev/(ttyACM\d+|ttyUSB\d+|serial/by-(id|path)/[A-Za-z0-9_.:\-]+))$")
     baudrate: int = Field(115200, ge=1200, le=2_000_000)
     protocol: str = "csv"
 
@@ -42,7 +43,7 @@ class MotionSection(_Section):
 
 
 class CameraSection(_Section):
-    device: str = "auto"
+    device: str = Field("auto", pattern=r"^(auto|/dev/video\d+)$")
     width: int = Field(640, ge=160, le=1920)
     height: int = Field(480, ge=120, le=1080)
     fps: int = Field(15, ge=1, le=60)

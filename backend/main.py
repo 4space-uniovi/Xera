@@ -18,7 +18,7 @@ from fastapi.staticfiles import StaticFiles
 from .api import camera, control, network
 from .config import REPO_ROOT, Settings, load_settings, resolve_config_path
 from .controllers.camera_controller import CameraController
-from .controllers.serial_controller import SerialController, get_protocol, SimulatedTransport
+from .controllers.serial_controller import PySerialTransport, SerialController, SimulatedTransport, get_protocol
 from .controllers.wifi_controller import WifiController
 from .motion import MotionManager
 
@@ -40,9 +40,16 @@ def create_app(settings: Settings | None = None, config_path: str | Path | None 
     path = resolve_config_path(config_path)
     settings = settings or load_settings(path)
 
-    # FASE 1: el ESP32 es siempre el simulador. La Fase 2 elegirá el puerto real aquí.
     proto = get_protocol(settings.serial.protocol)
-    serial = SerialController(proto, transport=SimulatedTransport(proto))
+    if settings.demo:  # sin hardware: ESP32 simulado en memoria
+        serial = SerialController(proto, transport=SimulatedTransport(proto))
+    else:
+        serial = SerialController(
+            proto,
+            transport_factory=lambda port, baud: PySerialTransport(port, baud),
+            port=settings.serial.port,
+            baudrate=settings.serial.baudrate,
+        )
     serial.connect()
 
     motion = MotionManager(
@@ -61,9 +68,19 @@ def create_app(settings: Settings | None = None, config_path: str | Path | None 
                 motion.check()
                 await asyncio.sleep(WATCHDOG_PERIOD_S)
 
+        async def serial_supervisor():
+            """Reabre el puerto si el USB se desconectó y recoge mensajes del ESP32."""
+            while True:
+                await asyncio.to_thread(serial.ensure_connected)
+                await asyncio.to_thread(serial.poll_rx)
+                await asyncio.sleep(1.0)
+
         task = asyncio.create_task(watchdog_loop())
+        sup = asyncio.create_task(serial_supervisor())
         yield
         task.cancel()
+        sup.cancel()
+        await app.state.camera.shutdown()
         motion.emergency_stop()
         serial.close()
 
@@ -73,7 +90,7 @@ def create_app(settings: Settings | None = None, config_path: str | Path | None 
     app.state.serial = serial
     app.state.motion = motion
     app.state.hub = hub
-    app.state.camera = CameraController(demo=settings.demo)
+    app.state.camera = CameraController(demo=settings.demo, get_cfg=lambda: app.state.settings.camera)
     app.state.wifi = WifiController(demo=settings.demo)
     app.state.started = time.monotonic()
 

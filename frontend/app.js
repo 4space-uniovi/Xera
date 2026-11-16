@@ -10,6 +10,7 @@
     btn.addEventListener("click", () => {
       document.querySelectorAll(".tab").forEach((b) => b.classList.toggle("active", b === btn));
       document.querySelectorAll(".tabpane").forEach((p) => p.classList.toggle("active", p.id === "tab-" + btn.dataset.tab));
+      pollCamera();
       if (btn.dataset.tab === "status") refreshStatus();
       if (btn.dataset.tab === "settings") loadSettings();
     })
@@ -102,6 +103,35 @@
     clearTimeout(flashTimer);
   }
 
+  /* ---------- vídeo ---------- */
+  // El <img> solo está conectado al stream mientras se ve la pestaña Control: así el
+  // backend no captura (ni gasta CPU) si nadie mira.
+  const img = $("video-img"), vmsg = $("video-msg");
+  let videoOn = false;
+  const videoWanted = () => !document.hidden && $("tab-control").classList.contains("active");
+
+  function stopVideo() { img.removeAttribute("src"); img.hidden = true; videoOn = false; }
+
+  async function pollCamera() {
+    let cam;
+    try { cam = await (await fetch("/api/camera/status")).json(); } catch (e) { return; }
+    if (videoOn && (cam.state === "disconnected" || cam.state === "error")) stopVideo(); // el stream murió
+    if (cam.available && videoWanted() && !videoOn) {
+      img.src = "/api/camera/stream?t=" + Date.now();
+      img.hidden = false; videoOn = true;
+    } else if (!videoWanted() && videoOn) {
+      stopVideo();
+    }
+    vmsg.hidden = videoOn && cam.state === "streaming";
+    if (!vmsg.hidden) {
+      vmsg.querySelector("b").textContent = cam.available ? "Conectando con la cámara…" : "Webcam desconectada";
+      $("video-detail").textContent = cam.detail || "";
+    }
+  }
+  img.addEventListener("error", stopVideo);
+  setInterval(pollCamera, 2000);
+  document.addEventListener("visibilitychange", pollCamera);
+
   /* ---------- estado del sistema ---------- */
   function stat(label, value, sub, level) {
     return `<div class="stat"><div class="label"><i class="dot ${level || ""}"></i>${label}</div>
@@ -116,9 +146,11 @@
       const s = d.serial, c = d.camera, w = d.wifi, m = d.motion;
       $("status-grid").innerHTML = [
         stat("ESP32-S3", s.connected ? (s.simulated ? "Simulado" : "Conectado") : "Desconectado",
-             s.error ? esc(s.error) : `${s.frames_sent} tramas enviadas`, s.connected ? (s.simulated ? "warn" : "ok") : "bad"),
-        stat("Puerto serie", esc(s.port || "—"), `Protocolo: ${esc(s.protocol)} · último: ${s.last_sent.x},${s.last_sent.y}`),
-        stat("Webcam", c.available ? "Conectada" : "Desconectada", esc(c.detail || ""), c.available ? "ok" : "bad"),
+             s.connected ? `${s.frames_sent} tramas enviadas${s.last_rx ? " · ESP32: " + esc(s.last_rx) : ""}` : esc(s.error || "sin puerto"),
+             s.connected ? (s.simulated ? "warn" : "ok") : "bad"),
+        stat("Puerto serie", esc(s.port || "—"), `${s.baudrate} baud · protocolo ${esc(s.protocol)} · último: ${s.last_sent.x},${s.last_sent.y} · reconexiones: ${s.reconnects}`),
+        stat("Webcam", c.state === "streaming" ? "Emitiendo" : c.available ? "Conectada" : "Desconectada",
+             c.available ? `${esc(c.name)} · ${c.fps_measured} fps · ${c.clients} espectador(es)` : esc(c.detail || ""), c.available ? "ok" : "bad"),
         stat("Wi-Fi", esc(w.mode), esc(w.detail || w.ssid || ""), w.state === "not_implemented" ? "warn" : "ok"),
         stat("Dirección IP", esc(w.ip), `http://${esc(w.ip)}:${location.port || 80}`),
         stat("Clientes conectados", m.clients),
@@ -141,8 +173,13 @@
   const fields = () => [...$("settings-form").querySelectorAll("[name]")];
 
   async function loadSettings() {
-    const [cfg, st] = await Promise.all([fetch("/api/config").then((r) => r.json()), fetch("/api/status").then((r) => r.json())]);
+    const [cfg, st, ports] = await Promise.all([fetch("/api/config").then((r) => r.json()), fetch("/api/status").then((r) => r.json()),
+                                               fetch("/api/serial/ports").then((r) => r.json())]);
     $("protocol-select").innerHTML = st.protocols.map((p) => `<option>${esc(p)}</option>`).join("");
+    $("port-list").innerHTML = ["auto", ...ports.map((p) => p.device)].map((p) => `<option value="${esc(p)}">`).join("");
+    const devs = st.camera.devices.map((d) => d.device);
+    if (cfg.camera.device !== "auto" && !devs.includes(cfg.camera.device)) devs.push(cfg.camera.device);
+    $("camera-select").innerHTML = ["auto", ...devs].map((d) => `<option>${esc(d)}</option>`).join("");
     for (const f of fields()) f.value = f.name.split(".").reduce((o, k) => o[k], cfg);
   }
 

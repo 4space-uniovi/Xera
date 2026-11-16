@@ -122,3 +122,5 @@ input[type=range] { width: 100%; accent-color: var(--brand); height: 32px; }
   .readout { justify-content: center; }
   .btn { min-height: 44px; padding: 8px; }
 }
+
+[hidden] { display: none !important; }

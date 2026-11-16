@@ -30,7 +30,7 @@ class RoverSection(_Section):
 
 class SerialSection(_Section):
     # Solo "auto" o un dispositivo USB-serie: el navegador no puede elegir rutas arbitrarias.
-    port: str = Field("auto", pattern=r"^(auto|/dev/(ttyACM\d+|ttyUSB\d+|serial/by-(id|path)/[A-Za-z0-9_.:\-]+))$")
+    port: str = Field("auto", pattern=r"^(auto|/dev/(ttyACM\d+|ttyUSB\d+|xera-esp32|serial/by-(id|path)/[A-Za-z0-9_.:\-]+))$")
     baudrate: int = Field(115200, ge=1200, le=2_000_000)
     protocol: str = "csv"
 

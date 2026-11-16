@@ -72,7 +72,7 @@ class Clock:
         return self.t
 
 
-def make(ports, clock=None, port="auto"):
+def make(ports, clock=None, port="auto", preferred=None):
     made = []
 
     def factory(p, baud):
@@ -82,7 +82,8 @@ def make(ports, clock=None, port="auto"):
         return tr
 
     ctrl = SerialController(CsvProtocol(), transport_factory=factory, port=port,
-                            ports_provider=lambda: list(ports), clock=clock or Clock())
+                            ports_provider=lambda: list(ports), clock=clock or Clock(),
+                            preferred_port=preferred)
     return ctrl, made
 
 
@@ -139,3 +140,17 @@ def test_reconfigure_port_reopens():
     assert not ctrl.connected
     assert ctrl.ensure_connected() is True
     assert made[-1].port == "/dev/ttyACM3" and made[-1].baudrate == 9600
+
+
+def test_auto_prefers_stable_udev_symlink(tmp_path):
+    link = tmp_path / "xera-esp32"
+    link.touch()
+    ctrl, made = make([{"device": "/dev/ttyACM0"}, {"device": "/dev/ttyACM1"}], preferred=str(link))
+    assert ctrl.connect() is True
+    assert made[0].port == str(link)        # no el primer ttyACM: así un GPS u otro USB no se confunde
+
+
+def test_auto_falls_back_without_symlink(tmp_path):
+    ctrl, made = make([{"device": "/dev/ttyACM1"}], preferred=str(tmp_path / "no-existe"))
+    ctrl.connect()
+    assert made[0].port == "/dev/ttyACM1"

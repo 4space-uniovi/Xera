@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import logging
 import math
+import os
 import re
 import threading
 import time
@@ -159,6 +160,8 @@ class SimulatedTransport(Transport):
         self.last = self.protocol.decode(data)
 
 
+# Enlace estable que crea la regla udev de scripts/install.sh para el ESP32 de XERA.
+PREFERRED_PORT = "/dev/xera-esp32"
 PORT_RE = re.compile(r"^/dev/(ttyACM\d+|ttyUSB\d+)$")
 
 
@@ -258,6 +261,7 @@ class SerialController:
         baudrate: int = 115200,
         ports_provider: Callable[[], list[dict]] = list_serial_ports,
         clock: Callable[[], float] = time.monotonic,
+        preferred_port: str | None = PREFERRED_PORT,
     ):
         self._lock = threading.Lock()
         self.protocol = protocol or CsvProtocol()
@@ -266,6 +270,7 @@ class SerialController:
         self.port = port
         self.baudrate = baudrate
         self._ports = ports_provider
+        self._preferred = preferred_port
         self._clock = clock
         self._last_attempt = -1e9
         self.last_sent: tuple[int, int] = (0, 0)
@@ -282,9 +287,11 @@ class SerialController:
         return self.transport is not None and self.transport.is_open
 
     def resolve_port(self) -> str | None:
-        """'auto' -> primer puerto USB-serie detectado; si no, el configurado."""
+        """'auto' -> /dev/xera-esp32 si existe (regla udev); si no, el primer puerto USB-serie."""
         if self.port != "auto":
             return self.port
+        if self._preferred and os.path.exists(self._preferred):
+            return self._preferred
         found = self._ports()
         return found[0]["device"] if found else None
 

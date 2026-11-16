@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#0b1213">
+  <title>4SPACE Mini Rover</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="logo">4SPACE</span><span id="rover-name" class="rover-name">Mini Rover</span></div>
+    <div class="top-status">
+      <span id="ws-pill" class="pill bad"><i class="dot"></i><span>Desconectado</span></span>
+      <span id="ctl-pill" class="pill"><i class="dot"></i><span>Sin control</span></span>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab active" data-tab="control" role="tab">Control</button>
+    <button class="tab" data-tab="status" role="tab">Estado</button>
+    <button class="tab" data-tab="settings" role="tab">Ajustes</button>
+  </nav>
+
+  <main>
+    <!-- A + B: vídeo y joystick -->
+    <section id="tab-control" class="tabpane active">
+      <div class="control-grid">
+        <div class="card video-card">
+          <div id="video-box" class="video-box">
+            <img id="video-img" alt="Vídeo en directo" hidden>
+            <div id="video-msg" class="video-msg">
+              <b>Webcam desconectada</b>
+              <small id="video-detail">Conecta la webcam al hub USB.</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="card pad-card">
+          <div id="pad" class="pad disabled" aria-label="Joystick">
+            <div class="pad-ring"></div>
+            <div id="knob" class="knob"></div>
+          </div>
+          <div class="readout">
+            <div>X <b id="val-x">0</b></div>
+            <div>Y <b id="val-y">0</b></div>
+          </div>
+          <div class="btn-row">
+            <button id="btn-control" class="btn primary">Pedir control</button>
+            <button id="btn-stop" class="btn danger">STOP</button>
+          </div>
+          <label class="speed">
+            <span>Velocidad máx. <b id="speed-val">60</b>%</span>
+            <input id="speed" type="range" min="20" max="100" step="5" value="60">
+          </label>
+          <p id="msg" class="hint" aria-live="polite"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- C: estado -->
+    <section id="tab-status" class="tabpane">
+      <div class="status-grid" id="status-grid"></div>
+    </section>
+
+    <!-- D: ajustes -->
+    <section id="tab-settings" class="tabpane">
+      <form id="settings-form" class="card form" autocomplete="off">
+        <h2>Rover</h2>
+        <label>Nombre del rover <input name="rover.name" maxlength="32"></label>
+
+        <h2>ESP32-S3 (UART)</h2>
+        <label>Puerto serie <input name="serial.port" list="port-list" placeholder="auto o /dev/ttyACM0"></label>
+        <datalist id="port-list"></datalist>
+        <label>Baudrate
+          <select name="serial.baudrate">
+            <option>9600</option><option>57600</option><option>115200</option><option>230400</option><option>460800</option><option>921600</option>
+          </select>
+        </label>
+        <label>Protocolo <select name="serial.protocol" id="protocol-select"></select></label>
+        <label>Velocidad máxima (%) <input name="motion.max_speed" type="number" min="20" max="100" step="5"></label>
+
+        <h2>Cámara</h2>
+        <label>Dispositivo <select name="camera.device" id="camera-select"></select></label>
+        <div class="row2">
+          <label>Ancho <input name="camera.width" type="number" min="160" max="1920"></label>
+          <label>Alto <input name="camera.height" type="number" min="120" max="1080"></label>
+          <label>FPS <input name="camera.fps" type="number" min="1" max="60"></label>
+        </div>
+
+        <h2>Wi-Fi <small>(Fase 4)</small></h2>
+        <label>SSID del hotspot <input name="wifi.ap_ssid" disabled></label>
+        <p class="hint">Las contraseñas Wi-Fi nunca se guardan en este fichero de ajustes.</p>
+
+        <div class="btn-row">
+          <button class="btn primary" type="submit">Guardar</button>
+        </div>
+        <p id="settings-msg" class="hint" aria-live="polite"></p>
+      </form>
+    </section>
+  </main>
+
+  <script src="joystick.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

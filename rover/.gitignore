@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+
+# Configuración local del rover (puede contener datos propios; nunca credenciales)
+config/rover.yaml
+*.env
+*.psk
+*.nmconnection

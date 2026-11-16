@@ -2,11 +2,20 @@
 # Actualiza el rover desde GitHub: git pull + aplica los cambios (dependencias, udev, servicio).
 #   ./update.sh               # pull y reinstala (pide sudo si hay que reiniciar el servicio)
 #   ./update.sh --dry-run     # solo muestra qué commits llegarían, sin cambiar nada
+#   ./update.sh --reinstall   # aunque estés al día, vuelve a aplicar la instalación
 # Tu configuración (rover/config/rover.yaml) no se toca: está fuera de git.
 set -euo pipefail
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 ROOT="$(git -C "$REPO" rev-parse --show-toplevel)"
-DRY=0; [ "${1:-}" = "--dry-run" ] && DRY=1
+DRY=0; REINSTALL=0
+for a in "$@"; do
+  case "$a" in
+    --dry-run) DRY=1 ;;
+    --reinstall) REINSTALL=1 ;;
+    -h|--help) sed -n '2,7p' "$0"; exit 0 ;;
+    *) echo "Opción desconocida: $a"; exit 2 ;;
+  esac
+done
 
 cd "$ROOT"
 if ! git diff --quiet || ! git diff --cached --quiet; then
@@ -21,9 +30,13 @@ UP="$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || true
 [ -n "$UP" ] || { echo "La rama $BRANCH no sigue ninguna rama remota (git branch -u origin/$BRANCH)."; exit 1; }
 
 NEW="$(git log --oneline HEAD.."$UP")"
-if [ -z "$NEW" ]; then echo "Ya estás al día."; [ "$DRY" = 1 ] && exit 0; else
-  echo "Llegan estos cambios:"; echo "$NEW" | sed 's/^/  /'
+if [ -z "$NEW" ]; then
+  echo "Ya estás al día."
+  [ "$REINSTALL" = 1 ] && [ "$DRY" = 0 ] && exec "$REPO/scripts/install.sh" --yes
+  [ "$REINSTALL" = 0 ] && echo "(si algo no va bien tras un update fallido: ./update.sh --reinstall)"
+  exit 0
 fi
+echo "Llegan estos cambios:"; echo "$NEW" | sed 's/^/  /'
 [ "$DRY" = 1 ] && exit 0
 
 OLD_HEAD="$(git rev-parse HEAD)"
